@@ -1,26 +1,63 @@
-import { useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import Hero from './components/Hero'
+import FeatureCards from './components/FeatureCards'
+import CTA from './components/CTA'
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [status, setStatus] = useState('Checking backend...')
+  const [challengeCount, setChallengeCount] = useState(null)
+
+  useEffect(() => {
+    // Ping backend and seed default challenges once
+    const init = async () => {
+      try {
+        const ping = await fetch(`${BACKEND_URL}`)
+        if (!ping.ok) throw new Error('Backend not reachable')
+        setStatus('Backend connected')
+
+        // Seed defaults (idempotent if already seeded)
+        const seed = await fetch(`${BACKEND_URL}/seed`, { method: 'POST' })
+        if (seed.ok) {
+          // fetch challenges count to display
+          const res = await fetch(`${BACKEND_URL}/challenges`)
+          const list = await res.json()
+          setChallengeCount(list.length)
+        }
+      } catch (e) {
+        setStatus('Backend unavailable')
+      }
+    }
+    init()
+  }, [])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-lg shadow-lg">
-        <h1 className="text-3xl font-bold text-gray-800 mb-4">
-          Vibe Coding Platform
-        </h1>
-        <p className="text-gray-600 mb-6">
-          Your AI-powered development environment
-        </p>
-        <div className="text-center">
-          <button
-            onClick={() => setCount(count + 1)}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
-          >
-            Count is {count}
-          </button>
+    <div className="min-h-screen bg-white text-gray-900">
+      <Hero />
+
+      <section className="py-10">
+        <div className="container mx-auto px-6 md:px-10">
+          <div className="rounded-xl border border-gray-200 p-5 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm text-gray-600">System status</p>
+              <p className="font-semibold">{status}</p>
+            </div>
+            {challengeCount !== null && (
+              <div className="text-sm text-gray-700">Challenges available: <span className="font-semibold">{challengeCount}</span></div>
+            )}
+          </div>
         </div>
-      </div>
+      </section>
+
+      <FeatureCards />
+      <CTA />
+
+      <footer className="py-10 border-t border-gray-200">
+        <div className="container mx-auto px-6 md:px-10 text-center text-sm text-gray-600">
+          EcoHero+ — From Kids to Legends – Earn by Saving Earth.
+        </div>
+      </footer>
     </div>
   )
 }
